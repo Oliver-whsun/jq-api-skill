@@ -1,110 +1,130 @@
-# jq-api: JoinQuant API 查询工具
+# jq-api
 
-> 🤖 让 AI Agent 准确查询聚宽量化平台 API——不再编造函数，不再用错未来函数。
+**JoinQuant（聚宽）量化平台 API 查询工具 — 让 AI Agent 准确使用聚宽函数，不再瞎猜。**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3](https://img.shields.io/badge/Python-3.7+-green.svg)](references/jq_search.py)
 
-## 是什么
+---
 
-`jq-api` 是一个专为 AI Agent 设计的 **JoinQuant（聚宽）量化交易平台 API 参考工具**。
+## 问题：AI 总是"幻觉"出根本不存在的聚宽函数
 
-当 Agent 需要编写聚宽量化策略、查询函数用法、配置回测参数时，它能快速、准确地找到官方 API 文档内容——而不是靠训练数据的记忆"捏造"一个根本不存在的函数。
+当你在 AI Agent 里写聚宽量化策略时，Agent 经常：
+- 把 `get_bars` 拼成 `get_historical_bars`
+- 把 `order_target` 的参数顺序搞错
+- 在**研究模块**里调用只有**回测才能用**的函数
+- 完全编造一个聚宽根本没提供的函数
 
-## 核心特性
+这是因为 Agent 的训练数据里没有完整、准确的聚宽 API 文档。
 
-- ✅ **准确来源**：所有内容提取自 JoinQuant 官方 PDF 文档（102 页，3651 行）
-- ✅ **中文友好**：UTF-8 编码，中文关键词直接搜索，无需转义
-- ✅ **智能标注**：自动识别 ♠ 回测专用 API，避免在研究模块中误用
-- ✅ **页码索引**：搜索结果标注对应 PDF 原版页码，便于溯源
-- ✅ **零依赖**：纯 Python 3 标准库，无任何第三方包依赖
-- ✅ **多 Agent 通用**：适配 Claude Code、Cursor、Codex、WorkBuddy 等主流 Agent
+---
+
+## 解决：jq-api
+
+本工具将 JoinQuant 官方 API 文档（102 页）整理为可搜索的参考库，供 AI Agent 在编写策略时实时查询。
+
+**安装后，Agent 会自动：**
+1. 当你提到"聚宽"、"get_bars"、"回测"等关键词时，加载本工具
+2. 在文档中搜索你需要的函数
+3. 返回准确的函数签名、参数说明、示例代码
+4. 标注哪些是"回测专用 API"（♠ 标记），防止在研究模块误用
+
+---
+
+## 核心功能
+
+| 功能 | 说明 |
+|------|------|
+| **准确查询** | 所有内容来自 JoinQuant 官方 PDF 文档，不靠 Agent 记忆 |
+| **中英文搜索** | 直接搜 `get_bars`，也可以搜 `资金流向`、`均线` |
+| **♠ 标记** | 自动标注回测/模拟专用 API，防止误用 |
+| **页码索引** | 搜索结果标注 PDF 页码，可快速溯源 |
+| **零依赖** | 纯 Python 3，无需安装任何第三方包 |
+
+---
 
 ## 安装
 
-### 方式一：npx skills（推荐）
-
 ```bash
+# 通过 skills CLI（适用于 Claude Code、Cursor 等）
 npx skills add sunweiheng/jq-api-skill
-```
 
-### 方式二：手动克隆
-
-```bash
+# 或手动克隆到 Agent 的 skills 目录
 git clone https://github.com/sunweiheng/jq-api-skill.git
-# 将 jq-api 目录放入 Agent 的 skills 目录
 ```
 
-## 快速开始
+---
 
-```bash
-cd jq-api-skill/references
+## 使用效果示例
 
-# 搜索函数
-python3 jq_search.py get_bars
-python3 jq_search.py order_target order_value
-python3 jq_search.py 资金流向 -c 5
+**问 Agent：** "用 get_bars 获取平安银行最近 20 天的日线数据"
 
-# 只看回测专用 API
-python3 jq_search.py 历史 --backtest-only
+**没有 jq-api：** Agent 可能编一个错误的函数，或者参数顺序全错。
 
-# 输出到文件
-python3 jq_search.py get_price -o /tmp/output.txt
+**有 jq-api：** Agent 查到：
+
+```
+⚡ get_bars ♠ — 获取历史数据
+   位置: 行 1181 | 第 35 页
+
+参数:
+  security: 股票代码
+  count: 大于0的整数，表示获取bar的个数
+  unit: bar的时间单位，支持 '1m','5m','15m','30m','60m','120m','1d','1w','1M'
+  fields: 'date','open','close','high','low','volume','money'
+  include_now: 是否包含当前bar
+
+示例:
+  array = get_bars('000001.XSHG', 20, unit='1d',
+                    fields=['open','close','high','low'],
+                    include_now=False)
+  array['close']
+
+⚠ 注意: ♠ 是回测/模拟专用 API，不能在研究模块调用
 ```
 
-## 典型使用场景
+---
 
-| 场景 | Agent 提示词示例 |
-|------|-----------------|
-| 查历史数据函数 | "用 get_bars 获取平安银行最近 20 天的日线数据" |
-| 查下单函数 | "用 order_target 将持仓调整为 0" |
-| 资金流向分析 | "获取主力资金净流入最高的前 10 只股票" |
-| 配置回测 | "set_benchmark 设为沪深 300 指数" |
-| 定时运行 | "每天开盘前 5 分钟运行一次" |
+## 支持的场景
 
-## ♠ 标记说明
+| 你想做的事 | Agent 会查到的函数 |
+|-----------|-----------------|
+| 获取历史 K 线数据 | `get_bars`、`get_price`、`history` |
+| 下单买卖 | `order`、`order_target`、`order_value` |
+| 查资金流向/主力动向 | `jqdata.get_money_flow` |
+| 均线、MACD 等技术指标 | `mavg`、`stddev`（在 SecurityUnitData 上） |
+| 设置回测基准 | `set_benchmark`、`set_option` |
+| 定时运行策略 | `run_daily`、`run_weekly` |
+| 融资融券操作 | `margincash_open`、`marginsec_close` 等 |
+| 财务因子选股 | `get_fundamentals`、`query` |
 
-JoinQuant API 分两类：
-- **通用 API**：研究模块和回测均可使用
-- **回测专用 API**：标记为 ♠，只能在回测/模拟环境调用
-
-本工具自动在搜索结果中标注 ♠ 标记，防止误用。
-
-已知回测专用 API：`history`、`attribute_history`、`get_current_data`、`get_bars`、`run_daily` 等。
+---
 
 ## 文件结构
 
 ```
-jq-api-skill/
-├── SKILL.md                      # Skill 定义（Agent 触发规则和使用说明）
+jq-api/
+├── SKILL.md                      # Agent 使用说明（含触发词、搜索规范）
 ├── README.md                     # 本文件
-├── LICENSE                      # MIT License
+├── LICENSE                      # MIT
 └── references/
-    ├── JoinQuantAPI.txt         # 可搜索的 API 参考文档
-    └── jq_search.py             # Python 搜索脚本
+    ├── JoinQuantAPI.txt         # 官方 API 参考文档（可直接用文本工具搜索）
+    └── jq_search.py             # Python 搜索脚本（推荐用这个）
 ```
-
-## 适用人群
-
-- **量化研究员**：快速查阅 API 规范，减少文档切换
-- **AI Agent 开发者**：为 Agent 添加强大的金融 API 查询能力
-- **量化教学**：作为 AI + 量化投资的实践案例
-
-## 官方参考
-
-- JoinQuant API 文档：https://www.joinquant.com/view/user/floor?type=mainFloor
-- JoinQuant 官网：https://www.joinquant.com
-
-## 限制与免责
-
-- 本工具整理和索引了 JoinQuant 官方 API 文档，不对 API 内容本身负责
-- JoinQuant 平台 API 可能随时更新，建议定期检查官方文档
-- ♠ 标记基于文档编写时的理解，实际使用请以官方文档为准
-
-## License
-
-MIT License — 可自由使用、修改和分发。
 
 ---
 
-*如果你觉得这个工具有帮助，欢迎 ⭐ Star！*
+## 数据来源
+
+- `JoinQuantAPI.txt` 由 JoinQuant 官方 PDF 文档提取
+- JoinQuant 官方文档：https://www.joinquant.com/view/user/floor?type=mainFloor
+- 本工具仅整理和索引，不对 API 内容本身负责
+
+---
+
+## License
+
+MIT — 可自由使用、修改和分发。
+
+---
+
+*觉得有帮助？请 ⭐ Star！*
